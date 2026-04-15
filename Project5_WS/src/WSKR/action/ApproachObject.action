@@ -1,0 +1,17 @@
+# Goal
+uint8 TARGET_TOY=0
+uint8 TARGET_BOX=1
+uint8 target_type
+int32 object_id
+robot_interfaces/ImgDetectionData selected_obj
+---
+# Result
+bool movement_success
+bool proximity_success
+string movement_message
+---
+# Feedback
+string tracking_mode
+float32 heading_to_target_deg
+float32[] whisker_lengths
+bool visually_tracked

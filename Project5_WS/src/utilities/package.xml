@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>utilities</name>
+  <version>0.1.0</version>
+  <description>
+    Consolidated tuning, diagnostic, and teleop GUIs for the WSKR navigation
+    stack: floor tuner, heading tuner, mecanum teleop, dashboard, ArUco
+    approach client, and object-selection helpers.
+  </description>
+  <maintainer email="user@todo.todo">user</maintainer>
+  <license>Apache License 2.0</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>rcl_interfaces</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>robot_interfaces</exec_depend>
+  <exec_depend>wskr</exec_depend>
+  <exec_depend>python3-opencv-contrib</exec_depend>
+  <exec_depend>python3-tk</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

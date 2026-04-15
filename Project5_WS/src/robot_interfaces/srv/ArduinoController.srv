@@ -1,0 +1,10 @@
+# Request
+string direction
+float32 speed
+float32 distance
+float32 duration
+---
+
+# Response
+bool success
+string message
