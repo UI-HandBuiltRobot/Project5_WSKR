@@ -2,15 +2,17 @@
 
 > **Before doing anything else, install the required Python packages:**
 > ```bash
-> pip install -r Project5_WS/requirements.txt
+> pip install -r project5_ws/requirements.txt
 > ```
 > This pins NumPy and OpenCV to versions that are compatible with ROS 2's
 > `cv_bridge`. Using different versions will cause runtime import errors.
 
-This workspace contains the ROS 2 code, the Arduino firmware, and the GUI
-tools for the vision-based mecanum robot. The goal of the system is
-simple: **point the robot's camera at an ArUco tag and have the robot
-autonomously drive up to it while avoiding obstacles.**
+This workspace contains the ROS 2 code and the GUI tools for the
+vision-based mecanum robot. Teams supply their own Arduino sketch
+(modified per the spec in [The Arduino side](#the-arduino-side)) to
+drive the mecanum base. The goal of the system is simple: **point the
+robot's camera at an ArUco tag and have the robot autonomously drive up
+to it while avoiding obstacles.**
 
 At the highest level, three things have to work together:
 
@@ -32,13 +34,10 @@ to do.
 ## Repository layout
 
 ```
-Project5_Solution_Vision_Navigation/
-├── Project5_WS/                       <- the ROS 2 workspace
-│   ├── Arduino/
-│   │   └── Mecanum_Wheel_Controller_Compact/
-│   │       └── Mecanum_Wheel_Controller_Compact.ino
-│   ├── Standalone Python Scripts/
-│   │   └── Calibrator/
+Project5_WSKR/
+├── project5_ws/                       <- the ROS 2 workspace
+│   ├── standalone_python_scripts/
+│   │   └── calibrator/
 │   │       └── whisker_calibration_tool.py  <- one-time pixel→mm mapper
 │   └── src/
 │       ├── wskr/                      <- floor mask, whiskers, approach action, DR fuser
@@ -55,7 +54,7 @@ read those first for context on what a specific node does.
 
 ## Building the workspace
 
-From `Project5_WS/`:
+From `project5_ws/`:
 
 ```bash
 # one-time dependency install (Jetson / Ubuntu 22.04)
@@ -100,9 +99,9 @@ Jetson is thermally throttling or if you want to save USB bandwidth.
 | `gstreamer_camera` | Publishes JPEG frames from the USB camera on `camera1/image_raw/compressed`. |
 | `wskr_floor` | Finds the floor in each frame → `WSKR/floor_mask`. |
 | `wskr_range` | Walks 11 whisker rays on the mask → `WSKR/whisker_lengths` and `WSKR/target_whisker_lengths`. Also publishes the composite `wskr_overlay/compressed`. |
-| `wskr_approach_action` | Runs ArUco detection, feeds whiskers + heading into the MLP, publishes `WSKR/cmd_vel`. |
+| `wskr_approach_action` | Supervises approach goals: runs ArUco/CSRT tracking, publishes a visual heading observation, enables the autopilot for the duration of the goal, and decides when the target is reached. |
 | `wskr_dead_reckoning` | Fuses visual heading and odometry yaw into a single `WSKR/heading_to_target` with hysteresis. |
-| `wskr_autopilot` | Runs the MLP inference loop, converting whisker + heading observations into velocity commands. |
+| `wskr_autopilot` | Runs the MLP inference loop, converting whisker + heading observations into `WSKR/cmd_vel` Twist commands. Gated by `WSKR/autopilot/enable`. |
 | `mecanum_serial_bridge` | Translates `WSKR/cmd_vel` ↔ Arduino serial, publishes `/odom`. |
 
 ### Step 2 — Tune the floor mask (`floor_tuner`)
@@ -152,7 +151,7 @@ first** — the calibration tool opens the camera directly and will
 conflict with the running stack.
 
 ```bash
-cd "Project5_WS/Standalone Python Scripts/Calibrator"
+cd "project5_ws/standalone_python_scripts/calibrator"
 python3 whisker_calibration_tool.py
 ```
 
@@ -164,14 +163,14 @@ Flow:
   distance in mm. Repeat for several distances per whisker.
 - Click **Done** to fit a spline; repeat for all 11 whisker angles.
 - Click **Save Calibration** and navigate to
-  `Project5_WS/src/wskr/config/` — overwrite `Whisker_Calibration.json`
+  `project5_ws/src/wskr/config/` — overwrite `whisker_calibration.json`
   with your new file.
 
 After saving, rebuild the `wskr` package so the install-share copy is
 refreshed:
 
 ```bash
-cd Project5_WS
+cd project5_ws
 colcon build --packages-select wskr
 source install/setup.bash
 ```
@@ -262,7 +261,7 @@ See the simulator's own documentation for full usage details. Once you
 have trained a model:
 
 1. Export it as a `.json` file from the trainer.
-2. Place it in `Project5_WS/src/wskr/wskr/models/`.
+2. Place it in `project5_ws/src/wskr/wskr/models/`.
    **The models folder should contain exactly one `.json` file** — the
    node loads whichever file it finds there at startup.
 3. Rebuild the package:
@@ -301,11 +300,11 @@ Sliders snap back to zero on mouse release for safety — uncheck the
 **This is the most substantial implementation task on the firmware side.
 Read this section carefully.**
 
-The mecanum base is driven by an Arduino running
-`Project5_WS/Arduino/Mecanum_Wheel_Controller_Compact/`. The reference
-sketch implements:
+The mecanum base is driven by an Arduino sketch that **your team is
+expected to bring with you** from earlier coursework. The ROS 2 side
+assumes the sketch exposes:
 
-- Four-wheel closed-loop speed control (PI + feed-forward) at 20 Hz.
+- Four-wheel closed-loop speed control at ~20 Hz.
 - Full mecanum inverse kinematics (body twist → per-wheel rad/s).
 - A CSV serial command protocol at 115200 baud:
   - `V,vx_cm_s,vy_cm_s,omega_deg_s\n` — continuous velocity stream.
@@ -315,17 +314,23 @@ sketch implements:
 
 ### You will need to update your own sketch
 
-**If your team is starting from a different mecanum sketch (for example,
-one that only supports distance-based commands like "drive forward 30 cm
-at 15 cm/s"), the ROS side will not be able to talk to it out of the
-box.** You must add the `V` streaming command and the `O` odometry
-telemetry described above. Without them, `WSKR/cmd_vel` has nowhere to
-go and `wskr_dead_reckoning` can't update when the tag leaves the FOV.
+No reference sketch ships with this repo — every team's mecanum
+controller looks a little different, and that's fine. The task here is
+to **modify the mecanum wheel controller you already wrote** so it
+accepts this project's new input format (`V` / `X` commands) and emits
+the `O` odometry telemetry the ROS stack needs.
 
-Copy-paste the prompt below into your coding agent of choice (Claude
-Code, Cursor, etc.) while you have your existing `.ino` open. It's
-written so an agent can do the modification in one pass without removing
-anything you already have:
+**If your existing sketch only supports distance-based commands (for
+example, "drive forward 30 cm at 15 cm/s"), the ROS side will not be
+able to talk to it out of the box.** You must add the `V` streaming
+command and the `O` odometry telemetry described above. Without them,
+`WSKR/cmd_vel` has nowhere to go and `wskr_dead_reckoning` can't update
+when the tag leaves the FOV.
+
+To make that retrofit easier, the prompt below is included so you can
+hand it, together with your own `.ino`, to a coding agent (Claude Code,
+Cursor, etc.). It is written so an agent can do the modification in one
+pass without removing anything you already have:
 
 > You are modifying an existing Arduino sketch that drives a
 > mecanum-wheeled robot base. Your goal is to add a new velocity
@@ -438,7 +443,7 @@ work.
 | Whiskers all show max range | Floor mask may be all-white (nothing detected as non-floor). Check `floor_tuner`. |
 | Target whiskers all at max range | Is a goal active? Target whiskers only register when the approach server is publishing a tracked bbox. |
 | Heading stays pinned at 0 when tag is visible | Is the approach action actually running? Check the dashboard status bar. |
-| Robot drives through the target | Check `proximity_success_mm` and whisker calibration (`config/Whisker_Calibration.json`). |
+| Robot drives through the target | Check `proximity_success_mm` and whisker calibration (`config/whisker_calibration.json`). |
 | Robot does nothing after "Start Approach" | Is `mecanum_serial_bridge` connected to the right `port`? Check `ros2 topic echo /odom` — if nothing, the Arduino isn't talking. |
 | Mode flips rapidly between visual and dead_reckoning | Hysteresis too tight — check `dr_handoff_deg` / `visual_reacquire_deg` params on `wskr_dead_reckoning`. |
 | "ApproachObject action server not available" in dashboard | `wskr_approach_action` node didn't start — check the launch terminal for errors. |

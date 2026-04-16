@@ -52,7 +52,7 @@ from rclpy.qos import (
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Bool, Float32, Float32MultiArray, String
 
-from wskr.action import ApproachObject
+from robot_interfaces.action import ApproachObject
 
 from .lens_model import LensParams, compute_heading_rad
 

@@ -40,6 +40,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/ArduinoController.srv"
   "srv/GA.srv"
   "action/XArm.action"
+  "action/ApproachObject.action"
   DEPENDENCIES std_msgs # Add packages that above messages depend on, in this case geometry_msgs for Sphere.msg
 )
 

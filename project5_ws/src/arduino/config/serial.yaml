@@ -1,0 +1,10 @@
+mecanum_serial_bridge:
+  ros__parameters:
+    port: /dev/ttyACM0
+    baud: 115200
+    odom_frame: odom
+    base_frame: base_link
+    publish_tf: true
+    cmd_rate_hz: 20.0
+    cmd_timeout_s: 0.5
+    stop_on_timeout: true

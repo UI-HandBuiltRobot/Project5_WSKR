@@ -3,13 +3,7 @@ project(wskr)
 
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
 find_package(robot_interfaces REQUIRED)
-
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "action/ApproachObject.action"
-  DEPENDENCIES robot_interfaces
-)
 
 ament_python_install_package(wskr)
 
@@ -34,5 +28,4 @@ install(PROGRAMS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-ament_export_dependencies(rosidl_default_runtime)
 ament_package()

@@ -1,0 +1,13 @@
+# Pinned to the versions that ROS 2's cv_bridge is built against.
+# Mismatches here cause "numpy.dtype size changed" / cv_bridge import errors.
+numpy==1.26.*
+opencv-contrib-python==4.10.*
+
+# GUI / vision tooling used by the calibrator and dashboards.
+Pillow
+scipy
+
+# Config + serial + HTTP clients used by the ROS nodes.
+PyYAML
+pyserial
+requests

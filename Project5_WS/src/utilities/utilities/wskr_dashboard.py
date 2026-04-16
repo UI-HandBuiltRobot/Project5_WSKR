@@ -46,7 +46,7 @@ from sensor_msgs.msg import CompressedImage, Image as RosImage
 from std_msgs.msg import Float32, Float32MultiArray, String
 
 from robot_interfaces.msg import ImgDetectionData
-from wskr.action import ApproachObject
+from robot_interfaces.action import ApproachObject
 
 
 IMAGE_QOS = QoSProfile(

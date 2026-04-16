@@ -1,0 +1,14 @@
+id: 1
+selected_obj:
+  image_width: 640
+  image_height: 480
+  inference_time: 0.0
+  detection_ids: ["obj1"]
+  x: [100.0]
+  y: [50.0]
+  width: [30.0]
+  height: [40.0]
+  distance: [3.0]
+  class_name: ["cube"]
+  confidence: [0.95]
+  aspect_ratio: [1.0]

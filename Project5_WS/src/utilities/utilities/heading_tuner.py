@@ -77,7 +77,7 @@ def _source_config_path_from_install_share() -> Optional[Path]:
     """Best-effort resolve of the source lens_params.yaml from the install share.
 
     Typical layout: <ws>/install/wskr/share/wskr/config/lens_params.yaml
-                    <ws>/src/WSKR/config/lens_params.yaml
+                    <ws>/src/wskr/config/lens_params.yaml
     """
     try:
         share = Path(get_package_share_directory('wskr'))
@@ -87,7 +87,7 @@ def _source_config_path_from_install_share() -> Optional[Path]:
     if 'install' not in parts:
         return None
     ws_root = Path(*parts[: parts.index('install')])
-    candidate = ws_root / 'src' / 'WSKR' / 'config' / 'lens_params.yaml'
+    candidate = ws_root / 'src' / 'wskr' / 'config' / 'lens_params.yaml'
     return candidate if candidate.exists() else None
 
 
