@@ -37,6 +37,7 @@ from typing import Optional
 import rclpy
 from geometry_msgs.msg import Quaternion, TransformStamped, Twist
 from nav_msgs.msg import Odometry
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy
 from std_msgs.msg import Empty, String
@@ -67,6 +68,11 @@ class MecanumSerialBridge(Node):
         self.declare_parameter('cmd_rate_hz', 20.0)
         self.declare_parameter('cmd_timeout_s', 0.5)
         self.declare_parameter('stop_on_timeout', True)
+        # Scalar multiplier applied to the whole cmd_vel (linear + angular)
+        # before it is sent to the Arduino. Writable at runtime via
+        # `ros2 param set` or the dashboard's "Inject" button so the robot
+        # can be slowed down during careful testing without a restart.
+        self.declare_parameter('drive_speed_multiplier', 1.0)
 
         self.port = self.get_parameter('port').value
         self.baud = int(self.get_parameter('baud').value)
@@ -76,6 +82,10 @@ class MecanumSerialBridge(Node):
         self.cmd_rate_hz = float(self.get_parameter('cmd_rate_hz').value)
         self.cmd_timeout_s = float(self.get_parameter('cmd_timeout_s').value)
         self.stop_on_timeout = bool(self.get_parameter('stop_on_timeout').value)
+        self.drive_speed_multiplier = self._clamp_multiplier(
+            float(self.get_parameter('drive_speed_multiplier').value)
+        )
+        self.add_on_set_parameters_callback(self._on_set_parameters)
 
         self._serial_lock = threading.Lock()
         self.ser = serial.Serial(self.port, self.baud, timeout=0.1)
@@ -116,6 +126,33 @@ class MecanumSerialBridge(Node):
             pass
         return super().destroy_node()
 
+    @staticmethod
+    def _clamp_multiplier(value: float) -> float:
+        if value < 0.0:
+            return 0.0
+        if value > 1.0:
+            return 1.0
+        return value
+
+    def _on_set_parameters(self, params) -> SetParametersResult:
+        for p in params:
+            if p.name == 'drive_speed_multiplier':
+                try:
+                    v = float(p.value)
+                except (TypeError, ValueError):
+                    return SetParametersResult(
+                        successful=False,
+                        reason='drive_speed_multiplier must be numeric',
+                    )
+                if not 0.0 <= v <= 1.0:
+                    return SetParametersResult(
+                        successful=False,
+                        reason='drive_speed_multiplier must be in [0.0, 1.0]',
+                    )
+                self.drive_speed_multiplier = v
+                self.get_logger().info(f'drive_speed_multiplier = {v:.3f}')
+        return SetParametersResult(successful=True)
+
     def _on_twist(self, msg: Twist) -> None:
         """Cache the newest cmd_vel and its arrival time."""
         with self._cmd_lock:
@@ -142,9 +179,10 @@ class MecanumSerialBridge(Node):
             if self.stop_on_timeout:
                 self._send_line('V,0,0,0')
             return
-        vx_cm = twist.linear.x * 100.0
-        vy_cm = twist.linear.y * 100.0
-        omega_deg = twist.angular.z * 180.0 / math.pi
+        k = self.drive_speed_multiplier
+        vx_cm = twist.linear.x * 100.0 * k
+        vy_cm = twist.linear.y * 100.0 * k
+        omega_deg = twist.angular.z * 180.0 / math.pi * k
         self._send_line(f'V,{vx_cm:.4f},{vy_cm:.4f},{omega_deg:.4f}')
 
     def _send_line(self, line: str) -> None:

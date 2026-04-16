@@ -1,9 +1,0 @@
-# Request
-int32 id
-float32 x
-float32 y
-
----
-# Response
-bool success
-std_msgs/Float32MultiArray motor_commands
