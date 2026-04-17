@@ -1,0 +1,16 @@
+{
+  "image_path": "PLACEHOLDER FOR WHISKER CALIBRATION DATA",
+  "image_width": 1920,
+  "image_height": 1080,
+  "whiskers": {
+    "-90": {
+      "points": [
+        {
+          "pixel_x": 0.0,
+          "pixel_y": 0.0,
+          "distance_mm": 0.0
+        }
+      ]
+    }
+  }
+}
