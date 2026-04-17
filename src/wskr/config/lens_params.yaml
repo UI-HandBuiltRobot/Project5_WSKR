@@ -1,0 +1,16 @@
+wskr_range:
+  ros__parameters:
+    x_min: 0.09167
+    x_max: 0.90833
+    cy: 0.28125
+    hfov_deg: 180.0
+    tilt_deg: 30.0
+    y_offset: 0.004
+wskr_approach_action:
+  ros__parameters:
+    x_min: 0.09167
+    x_max: 0.90833
+    cy: 0.28125
+    hfov_deg: 180.0
+    tilt_deg: 30.0
+    y_offset: 0.004

@@ -1,0 +1,12 @@
+wskr_floor:
+  ros__parameters:
+    resize_width: 640
+    resize_height: 360
+    blur_kernel_size: 15
+    bottom_sample_fraction: 0.5
+    bottom_sample_height_fraction: 0.25
+    morph_kernel_size: 13
+    val_range: 80
+    color_distance_threshold: 8
+    gradient_threshold: 14
+    highlight_thresh: 126

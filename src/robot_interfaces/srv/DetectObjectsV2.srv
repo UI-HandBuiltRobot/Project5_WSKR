@@ -1,0 +1,8 @@
+# Request
+int32 id
+string rotation_degrees
+
+---
+# Response
+bool success
+robot_interfaces/ImgDetectionData detections
